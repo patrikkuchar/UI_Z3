@@ -16,6 +16,11 @@ class Subject:
 
         self.fitness = self.calculateFitness()
 
+    def getNumOfMoves(self):
+        return len(self.moves)
+
+    def getNumOfCollectedT(self):
+        return self.collectedT
 
     def getFitness(self):
         return self.fitness
@@ -43,51 +48,54 @@ class Subject:
                 return True
         return False
 
-    def mutate(self, type):
+    def mutate(self):
 
-        if type == 0:
-            ##komplement jedného bytu v jednej bunke
-            ##pravdepodobnosť 1:20
-            if random.randrange(20) == 0:
-                index = random.randrange(64)
+        ##komplement jedného bytu v jednej bunke
+        ##pravdepodobnosť 1:20
+        if random.randrange(20) == 0:
+            index = random.randrange(64)
 
-                oldBin = bin(self.memory[index])
-                r = random.randrange(len(oldBin) - 2)
-                newBin = oldBin[:r+2] + str((int(oldBin[r+2]) + 1) % 2) + oldBin[r+3:]
+            oldBin = bin(self.memory[index])
+            if len(oldBin) != 10:
+                oldBin = oldBin[:2] + "0" * (10 - len(oldBin)) + oldBin[2:]
+            r = random.randrange(len(oldBin) - 2)
+            newBin = oldBin[:r+2] + str((int(oldBin[r+2]) + 1) % 2) + oldBin[r+3:]
 
-                self.memory[index] = int(newBin, 2)
+            self.memory[index] = int(newBin, 2)
 
-        if type == 1:
-            ##komplement jednej celej bunky
-            ##pravdepodobnosť 1:100
-            if random.randrange(100) == 0:
-                index = random.randrange(64)
 
-                oldBin = bin(self.memory[index])
-                newBin = '0b'
+        ##komplement jednej celej bunky
+        ##pravdepodobnosť 1:100
+        if random.randrange(100) == 0:
+            index = random.randrange(64)
 
-                for c in oldBin[2:]:
-                    newBin += str((int(c) + 1) % 2)
+            oldBin = bin(self.memory[index])
+            if len(oldBin) != 10:
+                oldBin = oldBin[:2] + "0" * (10 - len(oldBin)) + oldBin[2:]
+            newBin = '0b'
 
-                self.memory[index] = int(newBin, 2)
+            for c in oldBin[2:]:
+                newBin += str((int(c) + 1) % 2)
 
-        if type == 2:
-            ##výmena dvoch susediacich buniek
-            ##pravdepodobnosť 1:120
-            if random.randrange(120) == 0:
-                index1 = random.randrange(64)
-                index2 = random.randrange(64)
+            self.memory[index] = int(newBin, 2)
 
-                cell = self.memory[index1]
 
-                self.memory[index1] = self.memory[index2]
-                self.memory[index2] = cell
+        ##výmena dvoch susediacich buniek
+        ##pravdepodobnosť 1:120
+        if random.randrange(120) == 0:
+            index1 = random.randrange(64)
+            index2 = random.randrange(64)
 
-        if type == 3:
-            ##jedna bunka sa vymení za novú - náhodnú
-            ##pravdepodobnosť 1:200
-            if random.randrange(200) == 0:
-                self.memory[random.randrange(64)] = random.randrange(256)
+            cell = self.memory[index1]
+
+            self.memory[index1] = self.memory[index2]
+            self.memory[index2] = cell
+
+
+        ##jedna bunka sa vymení za novú - náhodnú
+        ##pravdepodobnosť 1:200
+        if random.randrange(200) == 0:
+            self.memory[random.randrange(64)] = random.randrange(256)
 
 
     def VM(self):
@@ -162,8 +170,9 @@ def memoryGenerator(n):
     return memory
 
 def selectPair(generation):
+    a = True
     ##ruleta
-    if True:
+    if a:
         sumFitness = 0
         for subject in generation:
             sumFitness += int(subject.getFitness() * 1000)
@@ -199,7 +208,42 @@ def selectPair(generation):
 
         return [subject1, subject2]
 
+    ##turnaj
+    if not a:
+        subject1 = None
+        subject2 = None
 
+        for i in range(2):
+            biggest_index = 0
+            biggest_index_p = 0
+            biggest_fitness = 0
+
+            for j in range(3):
+                r_index = random.randrange(len(generation))
+
+                if generation[r_index].getFitness() >= biggest_fitness:
+                    biggest_index_p = biggest_index
+                    biggest_fitness = generation[r_index].getFitness()
+                    biggest_index = r_index
+
+            if subject1 == None:
+                subject1 = generation[biggest_index]
+            elif generation[biggest_index] == subject1:
+                subject2 = generation[biggest_index_p]
+            else:
+                subject2 = generation[biggest_index]
+
+        return [subject1, subject2]
+
+
+
+def writeInfo(generation, num):
+    print("\n\n-----------------------\n" + str(num) + ". generácia\n")
+
+    count = 0
+    for subject in generation:
+        count += 1
+        print(str(count) + ". jedinec:  \tPočet krokov: " + str(subject.getNumOfMoves()) + "  \tPočet nájdených pokladov: " + str(subject.getNumOfCollectedT()))
 
 
 def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
@@ -207,6 +251,8 @@ def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
 
     for i in range(numOfSubjects):
         oldGeneration.append(Subject(memoryGenerator(64), player, treasures, sizeX, sizeY))
+
+    writeInfo(oldGeneration, 0)
 
 
     ##vykonanie reprodukcie
@@ -224,14 +270,16 @@ def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
             secondSubject = Subject(pair[1].getLeftSide(r) + pair[0].getRightSide(r), player, treasures, sizeX, sizeY)
 
             ## --- mutácia ---
-            firstSubject.mutate(random.randrange(3))
-            secondSubject.mutate(random.randrange(3))
+            firstSubject.mutate()
+            secondSubject.mutate()
 
             ##pridanie jedincov do novej generácie
             newGeneration.append(firstSubject)
             newGeneration.append(secondSubject)
 
         oldGeneration = newGeneration
+
+        writeInfo(oldGeneration, i + 1)
 
 
 
@@ -244,7 +292,7 @@ treasures = [[4,1], [2,2], [6,3], [1,4], [4,5]]
 sizeX = 7
 sizeY = 7
 
-init(player, treasures, sizeX, sizeY, 20, 8)
+init(player, treasures, sizeX, sizeY, 20, 10)
 
 
 
