@@ -1,10 +1,11 @@
 import random
+import copy
 
 class Subject:
     def __init__(self, memory, player, treasures_array, sizeX, sizeY):
         self.memory = memory
-        self.player = player
-        self.treasures_array = treasures_array
+        self.player = copy.copy(player)
+        self.treasures_array = copy.copy(treasures_array)
         self.sizeX = sizeX
         self.sizeY = sizeY
 
@@ -13,7 +14,22 @@ class Subject:
 
         self.VM()
 
-        self.daco = 0
+        self.fitness = self.calculateFitness()
+
+
+    def getFitness(self):
+        return self.fitness
+
+    def getLeftSide(self, n):
+        return self.memory[:n]
+
+    def getRightSide(self, n):
+        return self.memory[n:]
+
+    def calculateFitness(self):
+        move_f = 1 - len(self.moves)/1000
+        treasures_f = self.collectedT / (self.collectedT + len(self.treasures_array))
+        return move_f * treasures_f
 
     def getLastBits(self, bitNumber, num):
         mask = (1 << num) - 1
@@ -26,6 +42,53 @@ class Subject:
             if len(self.treasures_array) == 0:
                 return True
         return False
+
+    def mutate(self, type):
+
+        if type == 0:
+            ##komplement jedného bytu v jednej bunke
+            ##pravdepodobnosť 1:20
+            if random.randrange(20) == 0:
+                index = random.randrange(64)
+
+                oldBin = bin(self.memory[index])
+                r = random.randrange(len(oldBin) - 2)
+                newBin = oldBin[:r+2] + str((int(oldBin[r+2]) + 1) % 2) + oldBin[r+3:]
+
+                self.memory[index] = int(newBin, 2)
+
+        if type == 1:
+            ##komplement jednej celej bunky
+            ##pravdepodobnosť 1:100
+            if random.randrange(100) == 0:
+                index = random.randrange(64)
+
+                oldBin = bin(self.memory[index])
+                newBin = '0b'
+
+                for c in oldBin[2:]:
+                    newBin += str((int(c) + 1) % 2)
+
+                self.memory[index] = int(newBin, 2)
+
+        if type == 2:
+            ##výmena dvoch susediacich buniek
+            ##pravdepodobnosť 1:120
+            if random.randrange(120) == 0:
+                index1 = random.randrange(64)
+                index2 = random.randrange(64)
+
+                cell = self.memory[index1]
+
+                self.memory[index1] = self.memory[index2]
+                self.memory[index2] = cell
+
+        if type == 3:
+            ##jedna bunka sa vymení za novú - náhodnú
+            ##pravdepodobnosť 1:200
+            if random.randrange(200) == 0:
+                self.memory[random.randrange(64)] = random.randrange(256)
+
 
     def VM(self):
         PC = 0 #program counter
@@ -86,20 +149,102 @@ class Subject:
                 if self.checkTreasure():
                     break
 
-        print("a")
+
+def memoryGenerator(n):
+    memory = list(range(64))
+
+    for i in range(64):
+        if i < n:
+            memory[i] = random.randrange(256)
+        else:
+            memory[i] = 0
+
+    return memory
+
+def selectPair(generation):
+    ##ruleta
+    if True:
+        sumFitness = 0
+        for subject in generation:
+            sumFitness += int(subject.getFitness() * 1000)
+
+        randomN1 = random.randrange(sumFitness)
+        randomN2 = random.randrange(sumFitness)
+
+        subject1 = None
+        subject2 = None
+        index = -1
+
+        while subject1 == None or subject2 == None:
+
+            index = (index + 1) % len(generation)
+
+            subject_fitness = int(generation[index].getFitness() * 1000)
+            if subject_fitness == 0:
+                continue
+
+            randomN1 -= subject_fitness
+            randomN2 -= subject_fitness
+
+            if randomN1 < 0 and subject1 == None:
+                subject1 = generation[index]
+
+                ##či sa nevyžrebovali rovnaké chromozómy
+                if randomN2 < 0 and subject2 == None:
+                    randomN2 += subject_fitness
+
+            elif randomN2 < 0 and subject2 == None:
+                subject2 = generation[index]
 
 
-memory = list(range(64))
+        return [subject1, subject2]
 
-for i in range(64):
-    memory[i] = random.randrange(256)
+
+
+
+def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
+    oldGeneration = []
+
+    for i in range(numOfSubjects):
+        oldGeneration.append(Subject(memoryGenerator(64), player, treasures, sizeX, sizeY))
+
+
+    ##vykonanie reprodukcie
+    for i in range(numOfGenerations):
+
+        newGeneration = []
+
+        ## --- kríženie ---
+        for y in range(numOfSubjects // 2):
+            pair = selectPair(oldGeneration)
+
+            r = random.randrange(64)
+
+            firstSubject = Subject(pair[0].getLeftSide(r) + pair[1].getRightSide(r), player, treasures, sizeX, sizeY)
+            secondSubject = Subject(pair[1].getLeftSide(r) + pair[0].getRightSide(r), player, treasures, sizeX, sizeY)
+
+            ## --- mutácia ---
+            firstSubject.mutate(random.randrange(3))
+            secondSubject.mutate(random.randrange(3))
+
+            ##pridanie jedincov do novej generácie
+            newGeneration.append(firstSubject)
+            newGeneration.append(secondSubject)
+
+        oldGeneration = newGeneration
+
+
+
+
+
+
 
 player = [3,4]
-treasures_array = [[4,1], [2,2], [6,3], [1,4], [4,5]]
+treasures = [[4,1], [2,2], [6,3], [1,4], [4,5]]
 sizeX = 7
 sizeY = 7
 
-subject = Subject(memory, player, treasures_array, sizeX, sizeY)
+init(player, treasures, sizeX, sizeY, 20, 8)
 
 
 
