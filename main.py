@@ -52,7 +52,7 @@ class Subject:
 
         ##komplement jedného bytu v jednej bunke
         ##pravdepodobnosť 1:20
-        if random.randrange(20) == 0:
+        if random.randrange(mutation_prob1) == 0:
             index = random.randrange(64)
 
             oldBin = bin(self.memory[index])
@@ -66,7 +66,7 @@ class Subject:
 
         ##komplement jednej celej bunky
         ##pravdepodobnosť 1:100
-        if random.randrange(100) == 0:
+        if random.randrange(mutation_prob1) == 0:
             index = random.randrange(64)
 
             oldBin = bin(self.memory[index])
@@ -82,7 +82,7 @@ class Subject:
 
         ##výmena dvoch susediacich buniek
         ##pravdepodobnosť 1:120
-        if random.randrange(120) == 0:
+        if random.randrange(mutation_prob1) == 0:
             index1 = random.randrange(64)
             index2 = random.randrange(64)
 
@@ -94,7 +94,7 @@ class Subject:
 
         ##jedna bunka sa vymení za novú - náhodnú
         ##pravdepodobnosť 1:200
-        if random.randrange(200) == 0:
+        if random.randrange(mutation_prob1) == 0:
             self.memory[random.randrange(64)] = random.randrange(256)
 
 
@@ -134,21 +134,25 @@ class Subject:
 
                 self.moves.append(move)
 
+                ##vlavo
                 if move == 0:
                     if self.player[0] == 0:
                         break
                     self.player[0] -= 1
 
+                ##vpravo
                 elif move == 1:
                     if self.player[0] == self.sizeX - 1:
                         break
                     self.player[0] += 1
 
+                ##hore
                 elif move == 2:
                     if self.player[1] == 0:
                         break
                     self.player[1] -= 1
 
+                ##dole
                 else:
                     if self.player[1] == self.sizeY - 1:
                         break
@@ -170,9 +174,8 @@ def memoryGenerator(n):
     return memory
 
 def selectPair(generation):
-    a = True
     ##ruleta
-    if a:
+    if selectionType == 0:
         sumFitness = 0
         for subject in generation:
             sumFitness += int(subject.getFitness() * 1000)
@@ -209,7 +212,7 @@ def selectPair(generation):
         return [subject1, subject2]
 
     ##turnaj
-    if not a:
+    if selectionType == 1:
         subject1 = None
         subject2 = None
 
@@ -281,18 +284,76 @@ def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
 
         writeInfo(oldGeneration, i + 1)
 
+def read_input():
+    ##načítanie vstupných hodnôt z input.csv
+    f = open("input.csv", "r")
+
+    alldata = []
+
+    randomData = 0
+
+    for i in range(11):
+        line = f.readline()
+
+        if line == '':
+            print("Chyba v stupnom súbore.")
+            exit()
+
+        data = line.split(';')
+        data.pop()
+
+        if i == 0 or i == 1:
+            data_a = data[1].split(',')
+            alldata.append(int(data_a[0]))
+            alldata.append(int(data_a[1]))
+        elif i == 2:
+            randomData = int(data[1])
+        elif i == 3:
+            treasures_array = []#poklady
+            if randomData != 0:
+                for j in range(randomData):
+                    treasure = [random.randrange(alldata[2]), random.randrange(alldata[3])]
+                    while treasure in treasures_array:
+                        treasure = [random.randrange(alldata[2]), random.randrange(alldata[3])]
+                    treasures_array.append(treasure)
+            else:
+                for oneData in data[1:]:
+                    positions = oneData.split(',')
+                    treasures_array.append([int(positions[0]), int(positions[1])])
+            alldata.append(treasures_array)
+
+
+        else:
+            alldata.append(data[1])
+
+    return alldata
 
 
 
 
 
 
-player = [3,4]
-treasures = [[4,1], [2,2], [6,3], [1,4], [4,5]]
-sizeX = 7
-sizeY = 7
 
-init(player, treasures, sizeX, sizeY, 20, 10)
+
+input_data = read_input()
+
+player = [input_data[0], input_data[1]]
+sizeX = input_data[2]
+sizeY = input_data[3]
+treasures = input_data[4]
+
+selectionType = int(input_data[6])
+mutation_prob1 = int(input_data[7])
+mutation_prob2 = int(input_data[8])
+mutation_prob3 = int(input_data[9])
+mutation_prob4 = int(input_data[10])
+
+#player = [3,4]
+#treasures = [[4,1], [2,2], [6,3], [1,4], [4,5]]
+#sizeX = 7
+#sizeY = 7
+
+init(player, treasures, sizeX, sizeY, int(input_data[5]), int(input_data[11]))
 
 
 
