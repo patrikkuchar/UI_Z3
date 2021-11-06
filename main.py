@@ -136,27 +136,27 @@ class Subject:
 
                 ##vlavo
                 if move == 0:
-                    if self.player[0] == 0:
+                    if self.player["X"] == 0:
                         break
-                    self.player[0] -= 1
+                    self.player["X"] -= 1
 
                 ##vpravo
                 elif move == 1:
-                    if self.player[0] == self.sizeX - 1:
+                    if self.player["X"] == self.sizeX - 1:
                         break
-                    self.player[0] += 1
+                    self.player["X"] += 1
 
                 ##hore
                 elif move == 2:
-                    if self.player[1] == 0:
+                    if self.player["Y"] == 0:
                         break
-                    self.player[1] -= 1
+                    self.player["Y"] -= 1
 
                 ##dole
                 else:
-                    if self.player[1] == self.sizeY - 1:
+                    if self.player["Y"] == self.sizeY - 1:
                         break
-                    self.player[1] += 1
+                    self.player["Y"] += 1
 
                 if self.checkTreasure():
                     break
@@ -337,7 +337,10 @@ def read_input():
 
 input_data = read_input()
 
-player = [input_data[0], input_data[1]]
+player = {
+    "X" : input_data[0],
+    "Y" : input_data[1]
+}
 sizeX = input_data[2]
 sizeY = input_data[3]
 treasures = input_data[4]
