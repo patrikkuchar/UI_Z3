@@ -286,7 +286,7 @@ def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
 
 def read_input():
     ##načítanie vstupných hodnôt z input.csv
-    f = open("input.csv", "r")
+    f = open("input.txt", "r")
 
     alldata = []
 

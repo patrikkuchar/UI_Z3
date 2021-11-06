@@ -1,0 +1,11 @@
+Hrac;3,3;
+Velkost mapy;7,7;
+Nahodne poklady;0;
+Poklady;4,1;2,2;6,3;1,4;4,5;
+Pocet jedincov;25;
+Typ selekcie (Ruleta / Turnaj);0;
+Mutacia jedneho bitu;20;
+Mutacia jednej bunky;100;
+Mutacia vymena buniek;120;
+Mutacia nova bunka;200;
+Pocet generacii;10;
