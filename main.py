@@ -1,5 +1,6 @@
 import random
 import copy
+import tkinter
 
 class Subject:
     def __init__(self, memory, player, treasures_array, sizeX, sizeY):
@@ -18,6 +19,9 @@ class Subject:
 
     def getNumOfMoves(self):
         return len(self.moves)
+
+    def getMoves(self):
+        return self.moves
 
     def checkSuccess(self):
         if len(self.treasures_array) == 0:
@@ -58,52 +62,57 @@ class Subject:
 
     def mutate(self):
 
-        ##komplement jedného bytu v jednej bunke
-        ##pravdepodobnosť 1:20
-        if random.randrange(mutation_prob1) == 0:
-            index = random.randrange(64)
+        mutateType = random.randrange(4)
 
-            oldBin = bin(self.memory[index])
-            if len(oldBin) != 10:
-                oldBin = oldBin[:2] + "0" * (10 - len(oldBin)) + oldBin[2:]
-            r = random.randrange(len(oldBin) - 2)
-            newBin = oldBin[:r+2] + str((int(oldBin[r+2]) + 1) % 2) + oldBin[r+3:]
+        ##komplement nejakých bitov
+        if mutateType == 0:
+            for i in range(64):
+                oldBin = bin(self.memory[i])
+                if len(oldBin) != 10:
+                    oldBin = oldBin[:2] + "0" * (10 - len(oldBin)) + oldBin[2:]
 
-            self.memory[index] = int(newBin, 2)
+                newBin = "0b"
+                for c in oldBin[2:]:
+                    if random.randrange(mutation_prob1) == 0:
+                        newBin += str((int(c) + 1) % 2)
+                    else:
+                        newBin += c
+
+                self.memory[i] = int(newBin, 2)
+
+        ##komplement nejakých buniek
+        elif mutateType == 1:
+            for i in range(64):
+                if random.randrange(mutation_prob2) == 0:
+                    oldBin = bin(self.memory[i])
+                    if len(oldBin) != 10:
+                        oldBin = oldBin[:2] + "0" * (10 - len(oldBin)) + oldBin[2:]
+
+                    newBin = "0b"
+                    for c in oldBin[2:]:
+                        newBin += str((int(c) + 1) % 2)
+
+                    self.memory[i] = int(newBin, 2)
+
+        ##výmena nejakých buniek
+        elif mutateType == 2:
+            for i in range(64):
+                if random.randrange(mutation_prob3) == 0:
+                    index2 = random.randrange(64)
+
+                    cell = self.memory[i]
+
+                    self.memory[i] = self.memory[index2]
+                    self.memory[index2] = cell
+
+        ##náhodný obsah v nejakých bunkách
+        else:
+            for i in range(64):
+                if random.randrange(mutation_prob4) == 0:
+                    self.memory[i] = random.randrange(256)
 
 
-        ##komplement jednej celej bunky
-        ##pravdepodobnosť 1:100
-        if random.randrange(mutation_prob2) == 0:
-            index = random.randrange(64)
 
-            oldBin = bin(self.memory[index])
-            if len(oldBin) != 10:
-                oldBin = oldBin[:2] + "0" * (10 - len(oldBin)) + oldBin[2:]
-            newBin = '0b'
-
-            for c in oldBin[2:]:
-                newBin += str((int(c) + 1) % 2)
-
-            self.memory[index] = int(newBin, 2)
-
-
-        ##výmena dvoch susediacich buniek
-        ##pravdepodobnosť 1:120
-        if random.randrange(mutation_prob3) == 0:
-            index1 = random.randrange(64)
-            index2 = random.randrange(64)
-
-            cell = self.memory[index1]
-
-            self.memory[index1] = self.memory[index2]
-            self.memory[index2] = cell
-
-
-        ##jedna bunka sa vymení za novú - náhodnú
-        ##pravdepodobnosť 1:200
-        if random.randrange(mutation_prob4) == 0:
-            self.memory[random.randrange(64)] = random.randrange(256)
 
 
     def VM(self, memory):
@@ -168,6 +177,37 @@ class Subject:
 
                 if self.checkTreasure():
                     break
+
+def drawSolution(subject):
+    canvas = tkinter.Canvas(width=500,height=500)
+    canvas.pack()
+
+    moves = subject.getMoves()
+
+    x = 50
+    y = 50
+
+    if sizeX < sizeY:
+        size = 400 // sizeX
+    else:
+        size = 400 // sizeY
+
+    count = -1
+
+    for i in range(sizeY):
+        x = 50
+        for j in range(sizeX):
+            count += 1
+
+            canvas.create_rectangle(x, y, x + size, y + size)
+            if [j, i] in treasures:
+                canvas.create_oval(x + 5, y + 5, x + size - 5, y + size - 5, fill="yellow")
+
+            x += size
+        y += size
+
+
+    tkinter.mainloop()
 
 
 def memoryGenerator(n):
@@ -267,6 +307,7 @@ def writeInfo(generation, num):
             if n == "y":
                 Best_fitness = subject.getFitness()
             else:
+                drawSolution(subject)
                 exit()
         else:
             print(str(count) + ". jedinec:  \tPočet krokov: " + str(subject.getNumOfMoves()) + "  \tPočet nájdených pokladov: " + str(subject.getNumOfCollectedT()) + "\t\tFitness: " + str(subject.getFitness()))
@@ -321,6 +362,9 @@ def run(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
             n = input("Ak si prajete vytvárať ďalšie generácie, zadajte ich počet (ak nie - 0): ")
             if n != "0":
                 numOfGenerations += int(n)
+            else:
+                drawSolution(best_subject)
+
 
 
 def read_input():
