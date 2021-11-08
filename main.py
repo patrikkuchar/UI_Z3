@@ -34,7 +34,10 @@ class Subject:
     def calculateFitness(self):
         move_f = 1 - len(self.moves)/1000
         treasures_f = self.collectedT / (self.collectedT + len(self.treasures_array))
-        return move_f * treasures_f
+        calculatedFitness = int(move_f * treasures_f * 10000) #4 miesta za desatinou čiarkou
+        if calculatedFitness == 0:
+            return int(move_f * 1000)
+        return calculatedFitness
 
     def getLastBits(self, bitNumber, num):
         mask = (1 << num) - 1
@@ -173,13 +176,27 @@ def memoryGenerator(n):
 
     return memory
 
+def findBiggestFitness(generation):
+    biggest_index = 0
+    biggest_fitness = 0
+
+    count = 0
+
+    for subject in generation:
+        if subject.getFitness() > biggest_fitness:
+            biggest_index = count
+            biggest_fitness = subject.getFitness()
+        count += 1
+
+    return biggest_index
+
 def selectPair(generation):
     ##ruleta
     if selectionType == 0:
         sumFitness = 0
         ##spočítam si fitness celej generácie
         for subject in generation:
-            sumFitness += int(subject.getFitness() * 1000)
+            sumFitness += subject.getFitness()
 
         ##vyberiem 2 náhodné čísla v rozmedzí od 0 do súčtu celej generácie
         randomN1 = random.randrange(sumFitness)
@@ -194,9 +211,8 @@ def selectPair(generation):
 
             index = (index + 1) % len(generation)
 
-            subject_fitness = int(generation[index].getFitness() * 1000)
-            if subject_fitness == 0:
-                continue
+            subject_fitness = generation[index].getFitness()
+
 
             randomN1 -= subject_fitness
             randomN2 -= subject_fitness
@@ -224,13 +240,22 @@ def selectPair(generation):
             biggest_index_p = 0
             biggest_fitness = 0
 
-            for j in range(3):
-                r_index = random.randrange(len(generation))
+            r_generation = []
 
-                if generation[r_index].getFitness() >= biggest_fitness:
-                    biggest_index_p = biggest_index
-                    biggest_fitness = generation[r_index].getFitness()
-                    biggest_index = r_index
+            generation_len = len(generation)
+
+            for i in range(3):
+                r_generation.append(generation[random.randrange(generation_len)])
+
+            biggest_index = findBiggestFitness(r_generation)
+
+            #for j in range(3):
+                #r_index = random.randrange(len(generation))
+
+                #if generation[r_index].getFitness() >= biggest_fitness:
+                    #biggest_index_p = biggest_index
+                    #biggest_fitness = generation[r_index].getFitness()
+                    #biggest_index = r_index
 
             if subject1 == None:
                 subject1 = generation[biggest_index]
@@ -249,7 +274,7 @@ def writeInfo(generation, num):
     count = 0
     for subject in generation:
         count += 1
-        print(str(count) + ". jedinec:  \tPočet krokov: " + str(subject.getNumOfMoves()) + "  \tPočet nájdených pokladov: " + str(subject.getNumOfCollectedT()))
+        print(str(count) + ". jedinec:  \tPočet krokov: " + str(subject.getNumOfMoves()) + "  \tPočet nájdených pokladov: " + str(subject.getNumOfCollectedT()) + "\t\tFitness: " + str(subject.getFitness()))
 
 
 def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
@@ -267,7 +292,7 @@ def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
         newGeneration = []
 
         ## --- kríženie ---
-        for y in range(numOfSubjects // 2):
+        for y in range((numOfSubjects - eliteNum) // 2):
             pair = selectPair(oldGeneration)
 
             r = random.randrange(64)
@@ -283,6 +308,12 @@ def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
             newGeneration.append(firstSubject)
             newGeneration.append(secondSubject)
 
+        ## --- elitarizmus ---
+        for y in range(eliteNum):
+            ## najdeme najväčší prvok, vyberieme ho zo starej generácie a vložíme do novej
+            biggest_index = findBiggestFitness(oldGeneration)
+            newGeneration.append(oldGeneration.pop(biggest_index))
+
         oldGeneration = newGeneration
 
         writeInfo(oldGeneration, i + 1)
@@ -297,7 +328,7 @@ def read_input():
 
     randomData = 0
 
-    for i in range(11):
+    for i in range(12):
         line = f.readline()
 
         if line == '':
@@ -352,6 +383,7 @@ mutation_prob1 = int(input_data[7])
 mutation_prob2 = int(input_data[8])
 mutation_prob3 = int(input_data[9])
 mutation_prob4 = int(input_data[10])
+eliteNum = int(int(input_data[11]) / 100 * int(input_data[5]))
 
 #player = [3,4]
 #treasures = [[4,1], [2,2], [6,3], [1,4], [4,5]]
