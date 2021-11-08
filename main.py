@@ -19,6 +19,11 @@ class Subject:
     def getNumOfMoves(self):
         return len(self.moves)
 
+    def checkSuccess(self):
+        if len(self.treasures_array) == 0:
+            return True
+        return False
+
     def getNumOfCollectedT(self):
         return self.collectedT
 
@@ -33,7 +38,7 @@ class Subject:
 
     def calculateFitness(self):
         move_f = 1 - len(self.moves)/1000
-        treasures_f = self.collectedT / (self.collectedT + len(self.treasures_array))
+        treasures_f = self.collectedT / ((self.collectedT + len(self.treasures_array)) * 1)
         calculatedFitness = int(move_f * treasures_f * 10000) #4 miesta za desatinou čiarkou
         if calculatedFitness == 0:
             return int(move_f * 1000)
@@ -198,86 +203,76 @@ def selectPair(generation):
         for subject in generation:
             sumFitness += subject.getFitness()
 
-        ##vyberiem 2 náhodné čísla v rozmedzí od 0 do súčtu celej generácie
-        randomN1 = random.randrange(sumFitness)
-        randomN2 = random.randrange(sumFitness)
+        selectedSubjects = [None, None]
 
-        subject1 = None
-        subject2 = None
-        index = -1
+        for i in range(2):
+            while True: #do while
+                index = -1
+                randomN = random.randrange(sumFitness)
 
-        ##cyklus prechádza generáciu a odpočitáva fitness od vygenerovaných čísel až kým dane čísla nesú menšie ako 0 -> vyžrebovaný jedinec
-        while subject1 == None or subject2 == None:
+                while randomN >= 0:
+                    index = (index + 1) % len(generation)
 
-            index = (index + 1) % len(generation)
+                    subject_fitness = generation[index].getFitness()
+                    randomN -= subject_fitness
 
-            subject_fitness = generation[index].getFitness()
+                if generation[index] not in selectedSubjects:
+                    selectedSubjects[i] = generation[index]
+                    break
 
-
-            randomN1 -= subject_fitness
-            randomN2 -= subject_fitness
-
-            if randomN1 < 0 and subject1 == None:
-                subject1 = generation[index]
-
-                ##či sa nevyžrebovali rovnaké chromozómy
-                if randomN2 < 0 and subject2 == None:
-                    randomN2 += subject_fitness
-
-            elif randomN2 < 0 and subject2 == None:
-                subject2 = generation[index]
-
-
-        return [subject1, subject2]
+        return selectedSubjects
 
     ##turnaj
     if selectionType == 1:
-        subject1 = None
-        subject2 = None
+
+        selectedSubjects = [None, None]
+
+        generation_len = len(generation)
 
         for i in range(2):
-            biggest_index = 0
-            biggest_index_p = 0
-            biggest_fitness = 0
 
-            r_generation = []
+            while True:  # do while
 
-            generation_len = len(generation)
+                r_generation = []
 
-            for i in range(3):
-                r_generation.append(generation[random.randrange(generation_len)])
 
-            biggest_index = findBiggestFitness(r_generation)
+                for j in range(3):
+                    subject = generation[random.randrange(generation_len)]
+                    while subject not in r_generation:
+                        subject = generation[random.randrange(generation_len)]
+                    r_generation.append(subject)
 
-            #for j in range(3):
-                #r_index = random.randrange(len(generation))
+                biggest_index = findBiggestFitness(r_generation)
 
-                #if generation[r_index].getFitness() >= biggest_fitness:
-                    #biggest_index_p = biggest_index
-                    #biggest_fitness = generation[r_index].getFitness()
-                    #biggest_index = r_index
+                if generation[biggest_index] not in selectedSubjects:
+                    selectedSubjects[i] = generation[biggest_index]
+                    break
 
-            if subject1 == None:
-                subject1 = generation[biggest_index]
-            elif generation[biggest_index] == subject1:
-                subject2 = generation[biggest_index_p]
-            else:
-                subject2 = generation[biggest_index]
 
-        return [subject1, subject2]
+        return selectedSubjects
 
 
 
 def writeInfo(generation, num):
+    global Best_fitness
+
     print("\n\n-----------------------\n" + str(num) + ". generácia\n")
 
     count = 0
     for subject in generation:
         count += 1
-        print(str(count) + ". jedinec:  \tPočet krokov: " + str(subject.getNumOfMoves()) + "  \tPočet nájdených pokladov: " + str(subject.getNumOfCollectedT()) + "\t\tFitness: " + str(subject.getFitness()))
+        if subject.checkSuccess() and subject.getFitness() > Best_fitness:
+            print("\n\t\t" + str(count) + ". jedinec z " + str(num) + ". generácie našiel všetky (" + str(len(treasures)) + ") poklady na " + str(subject.getNumOfMoves()) + " krokov.\n\n")
+            n = input("Ak si prajete pokračovať v hľadaní lepšieho jedinca (menej krokov) stlačte 'y': ")
+            if n == "y":
+                Best_fitness = subject.getFitness()
+            else:
+                exit()
+        else:
+            print(str(count) + ". jedinec:  \tPočet krokov: " + str(subject.getNumOfMoves()) + "  \tPočet nájdených pokladov: " + str(subject.getNumOfCollectedT()) + "\t\tFitness: " + str(subject.getFitness()))
 
 
-def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
+def run(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
     oldGeneration = []
 
     for i in range(numOfSubjects):
@@ -285,9 +280,10 @@ def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
 
     writeInfo(oldGeneration, 0)
 
-
+    i = -1
     ##vykonanie reprodukcie
-    for i in range(numOfGenerations):
+    while i < numOfGenerations:
+        i += 1
 
         newGeneration = []
 
@@ -318,7 +314,14 @@ def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
 
         writeInfo(oldGeneration, i + 1)
 
-    print("hej")
+        if i == numOfGenerations:
+            best_subject = oldGeneration[findBiggestFitness(oldGeneration)]
+
+            print("\n" + str(numOfGenerations+1) + " generácií vytvorených.\nNajviac boli nájdené " + str(best_subject.getNumOfCollectedT()) + " poklady na " + str(best_subject.getNumOfMoves()) + " krokov.")
+            n = input("Ak si prajete vytvárať ďalšie generácie, zadajte ich počet (ak nie - 0): ")
+            if n != "0":
+                numOfGenerations += int(n)
+
 
 def read_input():
     ##načítanie vstupných hodnôt z input.csv
@@ -369,7 +372,8 @@ def read_input():
 
 
 
-
+SUCCESS = False
+Best_fitness = 0
 
 input_data = read_input()
 
@@ -383,14 +387,14 @@ mutation_prob1 = int(input_data[7])
 mutation_prob2 = int(input_data[8])
 mutation_prob3 = int(input_data[9])
 mutation_prob4 = int(input_data[10])
-eliteNum = int(int(input_data[11]) / 100 * int(input_data[5]))
+eliteNum = int(int(input_data[12]) / 100 * int(input_data[5]))
 
 #player = [3,4]
 #treasures = [[4,1], [2,2], [6,3], [1,4], [4,5]]
 #sizeX = 7
 #sizeY = 7
 
-init(player, treasures, sizeX, sizeY, int(input_data[5]), int(input_data[11]))
+run(player, treasures, sizeX, sizeY, int(input_data[5]), int(input_data[11]))
 
 
 
