@@ -12,7 +12,7 @@ class Subject:
         self.collectedT = 0
         self.moves = []
 
-        self.VM()
+        self.VM(copy.copy(memory))
 
         self.fitness = self.calculateFitness()
 
@@ -66,7 +66,7 @@ class Subject:
 
         ##komplement jednej celej bunky
         ##pravdepodobnosť 1:100
-        if random.randrange(mutation_prob1) == 0:
+        if random.randrange(mutation_prob2) == 0:
             index = random.randrange(64)
 
             oldBin = bin(self.memory[index])
@@ -82,7 +82,7 @@ class Subject:
 
         ##výmena dvoch susediacich buniek
         ##pravdepodobnosť 1:120
-        if random.randrange(mutation_prob1) == 0:
+        if random.randrange(mutation_prob3) == 0:
             index1 = random.randrange(64)
             index2 = random.randrange(64)
 
@@ -94,15 +94,15 @@ class Subject:
 
         ##jedna bunka sa vymení za novú - náhodnú
         ##pravdepodobnosť 1:200
-        if random.randrange(mutation_prob1) == 0:
+        if random.randrange(mutation_prob4) == 0:
             self.memory[random.randrange(64)] = random.randrange(256)
 
 
-    def VM(self):
+    def VM(self, memory):
         PC = 0 #program counter
 
         for i in range(500):
-            cell = self.memory[PC] #bunka v pamäti s ktorou budeme pracovať
+            cell = memory[PC] #bunka v pamäti s ktorou budeme pracovať
 
             #rozdelím si bunku na inštrukciu (prvé 2 bity) a adresu bunky, ktorú budem upravovať
             instruction = cell >> 6
@@ -110,15 +110,15 @@ class Subject:
 
             ##inkrementácia
             if instruction == 0:
-                self.memory[target] += 1
-                if self.memory[target] == 256:
-                    self.memory[target] = 0
+                memory[target] += 1
+                if memory[target] == 256:
+                    memory[target] = 0
 
             ##dekrementácia
             if instruction == 1:
-                self.memory[target] -= 1
-                if self.memory[target] == 0:
-                    self.memory[target] = 255
+                memory[target] -= 1
+                if memory[target] == -1:
+                    memory[target] = 255
 
             ##skok
             if instruction == 2:
@@ -128,7 +128,7 @@ class Subject:
 
             ##vypis
             if instruction == 3:
-                move = self.getLastBits(self.memory[target], 2)
+                move = self.getLastBits(memory[target], 2)
 
                 ##L - 0; R - 1; U - 2; D - 3
 
@@ -177,9 +177,11 @@ def selectPair(generation):
     ##ruleta
     if selectionType == 0:
         sumFitness = 0
+        ##spočítam si fitness celej generácie
         for subject in generation:
             sumFitness += int(subject.getFitness() * 1000)
 
+        ##vyberiem 2 náhodné čísla v rozmedzí od 0 do súčtu celej generácie
         randomN1 = random.randrange(sumFitness)
         randomN2 = random.randrange(sumFitness)
 
@@ -187,6 +189,7 @@ def selectPair(generation):
         subject2 = None
         index = -1
 
+        ##cyklus prechádza generáciu a odpočitáva fitness od vygenerovaných čísel až kým dane čísla nesú menšie ako 0 -> vyžrebovaný jedinec
         while subject1 == None or subject2 == None:
 
             index = (index + 1) % len(generation)
@@ -283,6 +286,8 @@ def init(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
         oldGeneration = newGeneration
 
         writeInfo(oldGeneration, i + 1)
+
+    print("hej")
 
 def read_input():
     ##načítanie vstupných hodnôt z input.csv
