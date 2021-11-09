@@ -1,5 +1,6 @@
 import random
 import copy
+import time
 import tkinter
 
 class Subject:
@@ -179,13 +180,14 @@ class Subject:
                     break
 
 def drawSolution(subject):
-    canvas = tkinter.Canvas(width=500,height=500)
+    Window = tkinter.Tk()
+    Window.geometry(f'{500}x{500}')
+    canvas = tkinter.Canvas(Window, width="500", height="500")
     canvas.pack()
+
 
     moves = subject.getMoves()
 
-    x = 50
-    y = 50
 
     if sizeX < sizeY:
         size = 400 // sizeX
@@ -194,6 +196,7 @@ def drawSolution(subject):
 
     count = -1
 
+    y = 50
     for i in range(sizeY):
         x = 50
         for j in range(sizeX):
@@ -205,6 +208,50 @@ def drawSolution(subject):
 
             x += size
         y += size
+
+    x = player[0]
+    y = player[1]
+
+    pX =  50 + player[0] * size + size//2
+    pY =  50 + player[1] * size + size//2
+    movingPlayer = canvas.create_oval(pX - size//4, pY - size//4, pX + size//4, pY + size//4, fill="blue")
+
+    canvas.move(movingPlayer, 0, 0)
+    Window.update()
+    time.sleep(4)
+
+    while len(moves) != 0:
+        move = moves.pop(0)
+        ##L-0;R-1;U-2,D-3
+
+
+
+        if move == 0:
+            canvas.create_line(pX, pY, pX - size, pY, fill="red", width=3)
+            canvas.move(movingPlayer, -size, 0)
+            pX -= size
+        elif move == 1:
+            canvas.create_line(pX, pY, pX + size, pY, fill="red", width=3)
+            canvas.move(movingPlayer, size, 0)
+            pX += size
+        elif move == 2:
+            canvas.create_line(pX, pY, pX, pY - size, fill="red", width=3)
+            canvas.move(movingPlayer, 0, -size)
+            pY -= size
+        else:
+            canvas.create_line(pX, pY, pX, pY + size, fill="red", width=3)
+            canvas.move(movingPlayer, 0, size)
+            pY += size
+
+
+
+        Window.update()
+        time.sleep(0.5)
+
+    #canvas.move(drownPlayer, pX - size, pY)
+    #canvas.move(drownPlayer, -10, -10)
+
+    #time.sleep(4)
 
 
     tkinter.mainloop()

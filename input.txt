@@ -1,6 +1,6 @@
 Hrac;3,3;
-Velkost mapy;7,7;
-Nahodne poklady;0;
+Velkost mapy;8,8;
+Nahodne poklady;6;
 Poklady;4,1;2,2;6,3;1,4;4,5;
 Pocet jedincov;20;
 Typ selekcie (Ruleta / Turnaj);0;
