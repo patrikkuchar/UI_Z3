@@ -189,12 +189,14 @@ def drawSolution(subject):
     moves = subject.getMoves()
 
 
-    if sizeX < sizeY:
+    if sizeX > sizeY:
         size = 400 // sizeX
     else:
         size = 400 // sizeY
 
     count = -1
+
+    foundT = []
 
     y = 50
     for i in range(sizeY):
@@ -206,8 +208,14 @@ def drawSolution(subject):
             if [j, i] in treasures:
                 canvas.create_oval(x + 5, y + 5, x + size - 5, y + size - 5, fill="yellow")
 
+
             x += size
         y += size
+
+    for i in range(len(treasures)):
+        foundT.append(canvas.create_rectangle(0, 0, 0, 0, fill="lightyellow"))
+
+    c_treasures = copy.copy(treasures)
 
     x = player[0]
     y = player[1]
@@ -216,37 +224,48 @@ def drawSolution(subject):
     pY =  50 + player[1] * size + size//2
     movingPlayer = canvas.create_oval(pX - size//4, pY - size//4, pX + size//4, pY + size//4, fill="blue")
 
+
     canvas.move(movingPlayer, 0, 0)
     Window.update()
-    time.sleep(4)
+    time.sleep(3)
 
     while len(moves) != 0:
         move = moves.pop(0)
         ##L-0;R-1;U-2,D-3
 
-
-
         if move == 0:
-            canvas.create_line(pX, pY, pX - size, pY, fill="red", width=3)
-            canvas.move(movingPlayer, -size, 0)
-            pX -= size
+            moveX = -size
+            moveY = 0
+            x -= 1
         elif move == 1:
-            canvas.create_line(pX, pY, pX + size, pY, fill="red", width=3)
-            canvas.move(movingPlayer, size, 0)
-            pX += size
+            moveX = size
+            moveY = 0
+            x += 1
         elif move == 2:
-            canvas.create_line(pX, pY, pX, pY - size, fill="red", width=3)
-            canvas.move(movingPlayer, 0, -size)
-            pY -= size
+            moveX = 0
+            moveY = -size
+            y -= 1
         else:
-            canvas.create_line(pX, pY, pX, pY + size, fill="red", width=3)
-            canvas.move(movingPlayer, 0, size)
-            pY += size
+            moveX = 0
+            moveY = size
+            y += 1
+
+        if [x, y] in c_treasures:
+            canvas.coords(foundT.pop(0), (pX + moveX) - size//2, (pY + moveY) - size//2, (pX + moveX) + size//2, (pY + moveY) + size//2)
+            c_treasures.remove([x, y])
 
 
-
+        canvas.create_line(pX, pY, pX + moveX//2, pY + moveY//2, fill="red", width=3)
+        canvas.move(movingPlayer, moveX//2, moveY//2)
         Window.update()
-        time.sleep(0.5)
+        time.sleep(0.1)
+        canvas.create_line(pX, pY, pX + moveX, pY + moveY, fill="red", width=3)
+        canvas.move(movingPlayer, moveX//2, moveY//2)
+        Window.update()
+        time.sleep(0.1)
+
+        pX += moveX
+        pY += moveY
 
     #canvas.move(drownPlayer, pX - size, pY)
     #canvas.move(drownPlayer, -10, -10)
@@ -405,7 +424,7 @@ def run(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
         if i == numOfGenerations:
             best_subject = oldGeneration[findBiggestFitness(oldGeneration)]
 
-            print("\n" + str(numOfGenerations+1) + " generácií vytvorených.\nNajviac boli nájdené " + str(best_subject.getNumOfCollectedT()) + " poklady na " + str(best_subject.getNumOfMoves()) + " krokov.")
+            print("\n" + str(numOfGenerations+1) + " generácií vytvorených.\nNajviac bolo nájdených " + str(best_subject.getNumOfCollectedT()) + " z " + str(len(treasures)) + " pokladov na " + str(best_subject.getNumOfMoves()) + " krokov.")
             n = input("Ak si prajete vytvárať ďalšie generácie, zadajte ich počet (ak nie - 0): ")
             if n != "0":
                 numOfGenerations += int(n)

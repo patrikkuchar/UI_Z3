@@ -1,6 +1,6 @@
 Hrac;3,3;
-Velkost mapy;8,8;
-Nahodne poklady;6;
+Velkost mapy;8,10;
+Nahodne poklady;15;
 Poklady;4,1;2,2;6,3;1,4;4,5;
 Pocet jedincov;20;
 Typ selekcie (Ruleta / Turnaj);0;
@@ -8,5 +8,5 @@ Mutacia jedneho bitu;200;
 Mutacia jednej bunky;300;
 Mutacia vymena buniek;350;
 Mutacia nova bunka;400;
-Pocet generacii;20;
+Pocet generacii;1000;
 Elitarizmus;20;
