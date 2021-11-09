@@ -362,7 +362,8 @@ def selectPair(generation):
 def writeInfo(generation, num):
     global Best_fitness
 
-    print("\n\n-----------------------\n" + str(num) + ". generácia\n")
+    if writeProgress:
+        print("\n\n-----------------------\n" + str(num) + ". generácia\n")
 
     count = 0
     for subject in generation:
@@ -375,7 +376,7 @@ def writeInfo(generation, num):
             else:
                 drawSolution(subject)
                 exit()
-        else:
+        elif writeProgress:
             print(str(count) + ". jedinec:  \tPočet krokov: " + str(subject.getNumOfMoves()) + "  \tPočet nájdených pokladov: " + str(subject.getNumOfCollectedT()) + "\t\tFitness: " + str(subject.getFitness()))
 
 
@@ -441,7 +442,7 @@ def read_input():
 
     randomData = 0
 
-    for i in range(12):
+    for i in range(13):
         line = f.readline()
 
         if line == '':
@@ -498,6 +499,11 @@ mutation_prob2 = int(input_data[8])
 mutation_prob3 = int(input_data[9])
 mutation_prob4 = int(input_data[10])
 eliteNum = int(int(input_data[12]) / 100 * int(input_data[5]))
+
+if input_data[13] == "0":
+    writeProgress = False
+else:
+    writeProgress = True
 
 #player = [3,4]
 #treasures = [[4,1], [2,2], [6,3], [1,4], [4,5]]

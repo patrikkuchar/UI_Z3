@@ -10,3 +10,4 @@ Mutacia vymena buniek;350;
 Mutacia nova bunka;400;
 Pocet generacii;1000;
 Elitarizmus;20;
+Priebezny vypis;0;
