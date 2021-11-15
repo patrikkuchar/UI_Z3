@@ -3,6 +3,9 @@ import copy
 import time
 import tkinter
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 class Subject:
     def __init__(self, memory, player, treasures_array, sizeX, sizeY):
         self.memory = memory
@@ -62,11 +65,13 @@ class Subject:
         return False
 
     def mutate(self):
+        global mutationType
 
-        mutateType = random.randrange(4)
+        if not test:
+            mutationType = random.randrange(4)
 
         ##komplement nejakých bitov
-        if mutateType == 0:
+        if mutationType == 0:
             for i in range(64):
                 oldBin = bin(self.memory[i])
                 if len(oldBin) != 10:
@@ -82,7 +87,7 @@ class Subject:
                 self.memory[i] = int(newBin, 2)
 
         ##komplement nejakých buniek
-        elif mutateType == 1:
+        elif mutationType == 1:
             for i in range(64):
                 if random.randrange(mutation_prob2) == 0:
                     oldBin = bin(self.memory[i])
@@ -96,7 +101,7 @@ class Subject:
                     self.memory[i] = int(newBin, 2)
 
         ##výmena nejakých buniek
-        elif mutateType == 2:
+        elif mutationType == 2:
             for i in range(64):
                 if random.randrange(mutation_prob3) == 0:
                     index2 = random.randrange(64)
@@ -251,16 +256,16 @@ def drawSolution(subject):
             y += 1
 
         if [x, y] in c_treasures:
-            canvas.coords(foundT.pop(0), (pX + moveX) - size//2, (pY + moveY) - size//2, (pX + moveX) + size//2, (pY + moveY) + size//2)
+            canvas.coords(foundT.pop(0), (pX + moveX) - size/2, (pY + moveY) - size/2, (pX + moveX) + size/2, (pY + moveY) + size/2)
             c_treasures.remove([x, y])
 
 
-        canvas.create_line(pX, pY, pX + moveX//2, pY + moveY//2, fill="red", width=3)
-        canvas.move(movingPlayer, moveX//2, moveY//2)
+        canvas.create_line(pX, pY, pX + moveX/2, pY + moveY/2, fill="red", width=3)
+        canvas.move(movingPlayer, moveX/2, moveY/2)
         Window.update()
         time.sleep(0.1)
         canvas.create_line(pX, pY, pX + moveX, pY + moveY, fill="red", width=3)
-        canvas.move(movingPlayer, moveX//2, moveY//2)
+        canvas.move(movingPlayer, moveX/2, moveY/2)
         Window.update()
         time.sleep(0.1)
 
@@ -332,27 +337,29 @@ def selectPair(generation):
     if selectionType == 1:
 
         selectedSubjects = [None, None]
+        #selectedSubjects = []
 
         generation_len = len(generation)
 
         for i in range(2):
 
-            while True:  # do while
-
-                r_generation = []
 
 
-                for j in range(3):
+            r_generation = []
+
+
+            for j in range(3):
+                subject = generation[random.randrange(generation_len)]
+                while subject in r_generation or subject == selectedSubjects[0]:
                     subject = generation[random.randrange(generation_len)]
-                    while subject not in r_generation:
-                        subject = generation[random.randrange(generation_len)]
-                    r_generation.append(subject)
+                r_generation.append(subject)
 
-                biggest_index = findBiggestFitness(r_generation)
 
-                if generation[biggest_index] not in selectedSubjects:
-                    selectedSubjects[i] = generation[biggest_index]
-                    break
+            biggest_index = findBiggestFitness(r_generation)
+            biggest_index = findBiggestFitness(r_generation)
+
+            selectedSubjects[i] = r_generation[biggest_index]
+
 
 
         return selectedSubjects
@@ -368,7 +375,7 @@ def writeInfo(generation, num):
     count = 0
     for subject in generation:
         count += 1
-        if subject.checkSuccess() and subject.getFitness() > Best_fitness:
+        if subject.checkSuccess() and subject.getFitness() > Best_fitness and not test:
             print("\n\t\t" + str(count) + ". jedinec z " + str(num) + ". generácie našiel všetky (" + str(len(treasures)) + ") poklady na " + str(subject.getNumOfMoves()) + " krokov.\n\n")
             n = input("Ak si prajete pokračovať v hľadaní lepšieho jedinca (menej krokov) stlačte 'y': ")
             if n == "y":
@@ -383,15 +390,20 @@ def writeInfo(generation, num):
 def run(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
     oldGeneration = []
 
+
     for i in range(numOfSubjects):
         oldGeneration.append(Subject(memoryGenerator(64), player, treasures, sizeX, sizeY))
 
     writeInfo(oldGeneration, 0)
 
-    i = -1
+    #pre testovanie
+    if test:
+        dataFromTesting[-1].append([oldGeneration[findBiggestFitness(oldGeneration)].getFitness()])
+
+    i = 0
     ##vykonanie reprodukcie
     while i < numOfGenerations:
-        i += 1
+
 
         newGeneration = []
 
@@ -422,7 +434,12 @@ def run(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
 
         writeInfo(oldGeneration, i + 1)
 
-        if i == numOfGenerations:
+        # pre testovanie
+        if test:
+            dataFromTesting[-1][-1].append(oldGeneration[findBiggestFitness(oldGeneration)].getFitness())
+
+
+        if i == numOfGenerations-1 and not test:
             best_subject = oldGeneration[findBiggestFitness(oldGeneration)]
 
             print("\n" + str(numOfGenerations+1) + " generácií vytvorených.\nNajviac bolo nájdených " + str(best_subject.getNumOfCollectedT()) + " z " + str(len(treasures)) + " pokladov na " + str(best_subject.getNumOfMoves()) + " krokov.")
@@ -432,6 +449,121 @@ def run(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
             else:
                 drawSolution(best_subject)
 
+        i += 1
+
+def drawGraph(A_fitness_array, S_type, E_num):
+    y = []
+    for fitness_array in A_fitness_array:
+        num = len(fitness_array)
+        fitness = []
+
+        for i in range(len(fitness_array[0])):
+            sum = 0
+            for j in range(num):
+                sum += fitness_array[j][i]
+            fitness.append(sum / num)
+
+        y.append(fitness)
+
+    x = np.arange(numOfGenerations + 1)
+    y1 = np.array(y[0])
+    y2 = np.array(y[1])
+    y3 = np.array(y[2])
+    y4 = np.array(y[3])
+
+    plt.title("Selekcia: " + S_type + "; Elitarizmus: " + E_num + "%")
+    plt.xlabel("Generacie")
+    plt.ylabel("Fitness")
+    plt.plot(x, y1, label="Komplement bitov")
+    plt.plot(x, y2, label="Komplement buniek")
+    plt.plot(x, y3, label="Výmena buniek")
+    plt.plot(x, y4, label="Náhodné bunky")
+    plt.legend(loc="lower right", title="Druh mutácie")
+    plt.show()
+
+def testing():
+    global mutationType, dataFromTesting, writeProgress, selectionType, eliteNum
+
+    numOfTests = 20
+
+    writeProgress = False
+
+    #Ruleta, mutacia1 - mutacia4, Elit - 0%
+    dataFromTesting = [[]]
+    selectionType = 0
+    mutationType = 0
+    eliteNum = 0
+    for k in range(4):
+        for i in range(numOfTests):
+            run(player,treasures,sizeX,sizeY,numOfSubjects,numOfGenerations)
+        mutationType += 1
+        dataFromTesting.append([])
+    drawGraph(dataFromTesting[:4], "Ruleta", "0")
+
+    # Turnaj, mutacia1 - mutacia4, Elit - 0%
+    dataFromTesting = [[]]
+    selectionType = 1
+    mutationType = 0
+    for k in range(4):
+        for i in range(numOfTests):
+            run(player,treasures,sizeX,sizeY,numOfSubjects,numOfGenerations)
+        mutationType += 1
+        dataFromTesting.append([])
+    drawGraph(dataFromTesting[:4], "Turnaj", "0")
+
+
+    # Ruleta, mutacia1 - mutacia4, Elit - 20%
+    dataFromTesting = [[]]
+    selectionType = 0
+    mutationType = 0
+    eliteNum = int(numOfSubjects * 0.2)
+    for k in range(4):
+        for i in range(numOfTests):
+            run(player,treasures,sizeX,sizeY,numOfSubjects,numOfGenerations)
+        mutationType += 1
+        dataFromTesting.append([])
+    drawGraph(dataFromTesting[:4], "Ruleta", "20")
+
+    # Turnaj, mutacia1 - mutacia4, Elit - 20%
+    dataFromTesting = [[]]
+    selectionType = 1
+    mutationType = 0
+    for k in range(4):
+        for i in range(numOfTests):
+            run(player,treasures,sizeX,sizeY,numOfSubjects,numOfGenerations)
+        mutationType += 1
+        dataFromTesting.append([])
+    drawGraph(dataFromTesting[:4], "Turnaj", "20")
+
+
+    # Ruleta, mutacia1 - mutacia4, Elit - 50%
+    dataFromTesting = [[]]
+    selectionType = 0
+    mutationType = 0
+    eliteNum = numOfSubjects // 2
+    for k in range(4):
+        for i in range(numOfTests):
+            run(player,treasures,sizeX,sizeY,numOfSubjects,numOfGenerations)
+        mutationType += 1
+        dataFromTesting.append([])
+    drawGraph(dataFromTesting[:4], "Ruleta", "50")
+
+    # Turnaj, mutacia1 - mutacia4, Elit - 50%
+    dataFromTesting = [[]]
+    selectionType = 1
+    mutationType = 0
+    for k in range(4):
+        for i in range(numOfTests):
+            run(player,treasures,sizeX,sizeY,numOfSubjects,numOfGenerations)
+        mutationType += 1
+        dataFromTesting.append([])
+    drawGraph(dataFromTesting[:4], "Turnaj", "50")
+
+
+
+
+
+    print("Testovanie dokončené.")
 
 
 def read_input():
@@ -442,7 +574,7 @@ def read_input():
 
     randomData = 0
 
-    for i in range(13):
+    for i in range(14):
         line = f.readline()
 
         if line == '':
@@ -481,7 +613,9 @@ def read_input():
 
 
 
-
+#pre testovanie
+mutationType = 0
+dataFromTesting = []
 
 SUCCESS = False
 Best_fitness = 0
@@ -492,25 +626,39 @@ player = [input_data[0], input_data[1]]
 sizeX = input_data[2]
 sizeY = input_data[3]
 treasures = input_data[4]
-
+numOfSubjects = int(input_data[5])
 selectionType = int(input_data[6])
 mutation_prob1 = int(input_data[7])
 mutation_prob2 = int(input_data[8])
 mutation_prob3 = int(input_data[9])
 mutation_prob4 = int(input_data[10])
+numOfGenerations = int(input_data[11])
 eliteNum = int(int(input_data[12]) / 100 * int(input_data[5]))
 
-if input_data[13] == "0":
-    writeProgress = False
+
+writeProgress = input_data[13] == "1"
+test = input_data[14] == "1"
+
+
+
+
+
+#x = np.arange(1,11)
+#y = 2 * x + 5
+#y2 = x + 2
+#plt.title("Matplotlib demo")
+#plt.xlabel("x axis caption")
+#plt.ylabel("y axis caption")
+#plt.plot(x,y, y2)
+#plt.show()
+
+
+
+
+if test:
+    testing()
 else:
-    writeProgress = True
-
-#player = [3,4]
-#treasures = [[4,1], [2,2], [6,3], [1,4], [4,5]]
-#sizeX = 7
-#sizeY = 7
-
-run(player, treasures, sizeX, sizeY, int(input_data[5]), int(input_data[11]))
+    run(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations)
 
 
 
