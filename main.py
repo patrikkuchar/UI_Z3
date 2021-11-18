@@ -45,6 +45,8 @@ class Subject:
         return self.memory[n:]
 
     def calculateFitness(self):
+        ##funkcia vypočíta fitness podľa počtu krokov a počtu nájdených pokladov
+        ##ak je 0 nájdených pokladov tak beriem do úvahy len kroky
         move_f = 1 - len(self.moves)/1000
         treasures_f = self.collectedT / ((self.collectedT + len(self.treasures_array)) * 1)
         calculatedFitness = int(move_f * treasures_f * 10000) #4 miesta za desatinou čiarkou
@@ -57,6 +59,8 @@ class Subject:
         return bitNumber & mask
 
     def checkTreasure(self):
+        ##funkcia zisťuje či jedinec našiel poklad, vtedy zväčším počitadlo najdených pokladov a odstraním zostavajuce poklady
+        ##ak nie je už žiaden poklad tak vrati True (nájdené všetky poklady), ináč False
         if self.player in self.treasures_array:
             self.collectedT += 1
             self.treasures_array.remove(self.player)
@@ -72,14 +76,19 @@ class Subject:
 
         ##komplement nejakých bitov
         if mutationType == 0:
+            ##cyklus prechádza každý číslo v pamäti inštrukcí
             for i in range(64):
+
+                ##vytvorím si string binarneho čísla tak aby malo 8 bitov
                 oldBin = bin(self.memory[i])
                 if len(oldBin) != 10:
                     oldBin = oldBin[:2] + "0" * (10 - len(oldBin)) + oldBin[2:]
 
+                ##cyklus prechádza textový reťazec binarneho čísla a pri náhodných bitoch spraví komplement
                 newBin = "0b"
                 for c in oldBin[2:]:
                     if random.randrange(mutation_prob1) == 0:
+                        ##ak je random číslo 0 (podľa pravdepodobnosti) - spraví komplement konktretného bitu
                         newBin += str((int(c) + 1) % 2)
                     else:
                         newBin += c
@@ -88,12 +97,17 @@ class Subject:
 
         ##komplement nejakých buniek
         elif mutationType == 1:
+            ##cyklus prechádza každý číslo v pamäti inštrukcí
             for i in range(64):
+
                 if random.randrange(mutation_prob2) == 0:
+
+                    ##vytvorím si string binarneho čísla tak aby malo 8 bitov
                     oldBin = bin(self.memory[i])
                     if len(oldBin) != 10:
                         oldBin = oldBin[:2] + "0" * (10 - len(oldBin)) + oldBin[2:]
 
+                    ##cyklus prechádza textovy reťazec binarneho čísla a spraví komplement každého bitu
                     newBin = "0b"
                     for c in oldBin[2:]:
                         newBin += str((int(c) + 1) % 2)
@@ -102,8 +116,10 @@ class Subject:
 
         ##výmena nejakých buniek
         elif mutationType == 2:
+            ##cyklus prechádza každý číslo v pamäti inštrukcí
             for i in range(64):
                 if random.randrange(mutation_prob3) == 0:
+                    ##vymením si 2 rôzne bunky
                     index2 = random.randrange(64)
 
                     cell = self.memory[i]
@@ -113,8 +129,10 @@ class Subject:
 
         ##náhodný obsah v nejakých bunkách
         else:
+            ##cyklus prechádza každý číslo v pamäti inštrukcí
             for i in range(64):
                 if random.randrange(mutation_prob4) == 0:
+                    ##vygenerujem novú inštrukciu na bunke
                     self.memory[i] = random.randrange(256)
 
 
@@ -122,8 +140,11 @@ class Subject:
 
 
     def VM(self, memory):
+        ##funkcia simuluje virtualny stroj
         PC = 0 #program counter
 
+        ##parameter zo zadania - 500 inštrukcií
+        ##jedno prejdenie cyklu znamená jedno vykonanie inštrukcie
         for i in range(500):
             cell = memory[PC] #bunka v pamäti s ktorou budeme pracovať
 
@@ -183,8 +204,11 @@ class Subject:
 
                 if self.checkTreasure():
                     break
+## ==== koniec triedy Subject ====
 
 def drawSolution(subject):
+    ##funkcia vykreslí najlepšie riešenie
+
     Window = tkinter.Tk()
     Window.geometry(f'{500}x{500}')
     canvas = tkinter.Canvas(Window, width="500", height="500")
@@ -203,6 +227,7 @@ def drawSolution(subject):
 
     foundT = []
 
+    ##cyklus vykreslí hraciu plochu spolu s pokladmi
     y = 50
     for i in range(sizeY):
         x = 50
@@ -217,23 +242,27 @@ def drawSolution(subject):
             x += size
         y += size
 
+    ##cyklus vygeneruje štvorce, ktorými sa neskôr prekryju políčka s nájdenými pokladmi
     for i in range(len(treasures)):
         foundT.append(canvas.create_rectangle(0, 0, 0, 0, fill="lightyellow"))
 
     c_treasures = copy.copy(treasures)
 
+    #pozícia hľadača (na mriežke)
     x = player[0]
     y = player[1]
 
+    #pozicia hľadača (na canvase)
     pX =  50 + player[0] * size + size//2
     pY =  50 + player[1] * size + size//2
-    movingPlayer = canvas.create_oval(pX - size//4, pY - size//4, pX + size//4, pY + size//4, fill="blue")
+    movingPlayer = canvas.create_oval(pX - size//4, pY - size//4, pX + size//4, pY + size//4, fill="blue") #hľadač
 
 
     canvas.move(movingPlayer, 0, 0)
     Window.update()
     time.sleep(3)
 
+    ##v cykle prehľadávam pohyby a hybem hľadačom a kreslím za ním čiaru, pričom kontrolujem či nenašiel poklad (prekrytie daného políčka)
     while len(moves) != 0:
         move = moves.pop(0)
         ##L-0;R-1;U-2,D-3
@@ -272,16 +301,12 @@ def drawSolution(subject):
         pX += moveX
         pY += moveY
 
-    #canvas.move(drownPlayer, pX - size, pY)
-    #canvas.move(drownPlayer, -10, -10)
-
-    #time.sleep(4)
-
-
     tkinter.mainloop()
 
 
 def memoryGenerator(n):
+    ##vygeneruje pole 64 random čísel do 255
+    ##argument n znamená počet čísel, ktoré chceme náhodne vygenerovať - zvyšné nuly (tak ako to je v zadaní, ale používam iba 64)
     memory = list(range(64))
 
     for i in range(64):
@@ -293,6 +318,8 @@ def memoryGenerator(n):
     return memory
 
 def findBiggestFitness(generation):
+    ##funkcia prehľadá celú generáciu a nájde index jedinca, ktorý ma najväčšiu fitness
+
     biggest_index = 0
     biggest_fitness = 0
 
@@ -307,15 +334,17 @@ def findBiggestFitness(generation):
     return biggest_index
 
 def selectPair(generation):
-    ##ruleta
+    ## ---- ruleta ----
     if selectionType == 0:
         sumFitness = 0
         ##spočítam si fitness celej generácie
         for subject in generation:
             sumFitness += subject.getFitness()
 
-        selectedSubjects = [None, None]
+        selectedSubjects = [None, None] #dvojica jedincov, ktorý budú vylosovaný
 
+        ## v cykle si vygenerujem random číslo z intervalu sumFitness a od neho odčítavám fitness jedincov až kým nenarazím na záporne číslo - vylosovaný jedince
+        ## to robím až kým nevylosujem dvoch jedinečných jedincov
         for i in range(2):
             while True: #do while
                 index = -1
@@ -333,21 +362,18 @@ def selectPair(generation):
 
         return selectedSubjects
 
-    ##turnaj
+    ## ---- turnaj ----
     if selectionType == 1:
 
-        selectedSubjects = [None, None]
-        #selectedSubjects = []
+        selectedSubjects = [None, None] #dvojica jedincov, ktorý budú vylosovaný
 
         generation_len = len(generation)
 
         for i in range(2):
 
-
-
             r_generation = []
 
-
+            #cyklus nájde 3 náhodných jedinečných jedincov, tak aby to nebol už ten prvý vylosovaný
             for j in range(3):
                 subject = generation[random.randrange(generation_len)]
                 while subject in r_generation or subject == selectedSubjects[0]:
@@ -358,15 +384,15 @@ def selectPair(generation):
             biggest_index = findBiggestFitness(r_generation)
             biggest_index = findBiggestFitness(r_generation)
 
+            #pridelím z tých troch toho jedinca, ktorý ma najväčší fitness
             selectedSubjects[i] = r_generation[biggest_index]
-
-
 
         return selectedSubjects
 
 
 
 def writeInfo(generation, num):
+    ##funkcia vypíše základné informácie o všetkých jedincoch generácie, pričom zisťuje či jedinec nenašiel všetky poklady
     global Best_fitness
 
     if writeProgress:
@@ -375,6 +401,7 @@ def writeInfo(generation, num):
     count = 0
     for subject in generation:
         count += 1
+        ##checkSucces() vráti či jedinec našiel všetky poklady; Best_fitness je fitness posledného jedinca čo našiel poklad (default 0) - aby sa tak našiel lepší
         if subject.checkSuccess() and subject.getFitness() > Best_fitness and not test:
             print("\n\t\t" + str(count) + ". jedinec z " + str(num) + ". generácie našiel všetky (" + str(len(treasures)) + ") poklady na " + str(subject.getNumOfMoves()) + " krokov.\n\n")
             n = input("Ak si prajete pokračovať v hľadaní lepšieho jedinca (menej krokov) stlačte 'y': ")
@@ -390,18 +417,18 @@ def writeInfo(generation, num):
 def run(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
     oldGeneration = []
 
-
+    ##vytvorenie 0. generácie (random hodnoty v pamäti}
     for i in range(numOfSubjects):
         oldGeneration.append(Subject(memoryGenerator(64), player, treasures, sizeX, sizeY))
 
     writeInfo(oldGeneration, 0)
 
-    #pre testovanie
+    #pre testovanie - uloží najlepšiu fitness 0. generácie
     if test:
         dataFromTesting[-1].append([oldGeneration[findBiggestFitness(oldGeneration)].getFitness()])
 
     i = 0
-    ##vykonanie reprodukcie
+    ##cyklus vytvára nové generácie až kým sa nesplní jedna z podmienok ukončenia (mimo mapy, všetky poklady, vygenerovaný zadaný počet generácií)
     while i < numOfGenerations:
 
 
@@ -438,7 +465,7 @@ def run(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
         if test:
             dataFromTesting[-1][-1].append(oldGeneration[findBiggestFitness(oldGeneration)].getFitness())
 
-
+        ## ak je vygenerovaný požadovaný počet generácií
         if i == numOfGenerations-1 and not test:
             best_subject = oldGeneration[findBiggestFitness(oldGeneration)]
 
@@ -452,6 +479,7 @@ def run(player, treasures, sizeX, sizeY, numOfSubjects, numOfGenerations):
         i += 1
 
 def drawGraph(A_fitness_array, S_type, E_num):
+    ##funkcia spriemeruje všetky testy a vysledky vykreslí do 4 grafov
     y = []
     for fitness_array in A_fitness_array:
         num = len(fitness_array)
@@ -482,9 +510,10 @@ def drawGraph(A_fitness_array, S_type, E_num):
     plt.show()
 
 def testing():
+    ##vo funkcii niekoľkokrát spúšťam algoritmus s rôznymi parametrami
     global mutationType, dataFromTesting, writeProgress, selectionType, eliteNum
 
-    numOfTests = 20
+    numOfTests = 100#20
 
     writeProgress = False
 
@@ -574,7 +603,7 @@ def read_input():
 
     randomData = 0
 
-    for i in range(14):
+    for i in range(14): #malo by byť 14 riadkov v txt súboru
         line = f.readline()
 
         if line == '':
@@ -584,13 +613,14 @@ def read_input():
         data = line.split(';')
         data.pop()
 
-        if i == 0 or i == 1:
+        if i == 0 or i == 1: #riadky, kde sú 2 súradnice
             data_a = data[1].split(',')
             alldata.append(int(data_a[0]))
             alldata.append(int(data_a[1]))
-        elif i == 2:
+        elif i == 2: #počet náhodných pokladov
             randomData = int(data[1])
         elif i == 3:
+            #ak je počet náhodných pokladov 0 tak prečíta riadok 3, inak ich vygeneruje podľa toho počtu
             treasures_array = []#poklady
             if randomData != 0:
                 for j in range(randomData):
@@ -614,44 +644,29 @@ def read_input():
 
 
 #pre testovanie
-mutationType = 0
-dataFromTesting = []
+mutationType = 0 #typ mutacie
+dataFromTesting = [] #ukladam najlepšiu fitness každej generácie pre testovanie
 
-SUCCESS = False
-Best_fitness = 0
+Best_fitness = 0 #fitness jedinca, ktorý našiel všetky poklady (pomaha nájsť lepšieho takého jedinca)
 
 input_data = read_input()
 
-player = [input_data[0], input_data[1]]
-sizeX = input_data[2]
-sizeY = input_data[3]
-treasures = input_data[4]
-numOfSubjects = int(input_data[5])
-selectionType = int(input_data[6])
-mutation_prob1 = int(input_data[7])
-mutation_prob2 = int(input_data[8])
-mutation_prob3 = int(input_data[9])
-mutation_prob4 = int(input_data[10])
-numOfGenerations = int(input_data[11])
-eliteNum = int(int(input_data[12]) / 100 * int(input_data[5]))
+player = [input_data[0], input_data[1]] #pozicia hraca
+sizeX = input_data[2] #šírka mapy
+sizeY = input_data[3] #výška mapy
+treasures = input_data[4] #pozície pokladov
+numOfSubjects = int(input_data[5]) #počet jedincov v generacii
+selectionType = int(input_data[6]) #ruleta/turnaj
+mutation_prob1 = int(input_data[7]) #pravdepodobnosť mutacie1
+mutation_prob2 = int(input_data[8]) #pravdepodobnosť mutacie2
+mutation_prob3 = int(input_data[9]) #pravdepodobnosť mutacie3
+mutation_prob4 = int(input_data[10]) #pravdepodobnosť mutacie4
+numOfGenerations = int(input_data[11]) #počet generacii
+eliteNum = int(int(input_data[12]) / 100 * int(input_data[5])) #počet jedincov, ktorí prežíjú (elitárstvo)
 
 
-writeProgress = input_data[13] == "1"
-test = input_data[14] == "1"
-
-
-
-
-
-#x = np.arange(1,11)
-#y = 2 * x + 5
-#y2 = x + 2
-#plt.title("Matplotlib demo")
-#plt.xlabel("x axis caption")
-#plt.ylabel("y axis caption")
-#plt.plot(x,y, y2)
-#plt.show()
-
+writeProgress = input_data[13] == "1" #výpis jedincov počas behu programu
+test = input_data[14] == "1" #prepínač či sa jedná o testovanie alebo obyčajné spustenie programu
 
 
 
